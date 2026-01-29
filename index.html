@@ -52,10 +52,15 @@
             z-index: 9999;
             box-shadow: 0 4px 12px rgba(45, 64, 89, 0.3);
             transition: all 0.3s ease;
+            display: none; /* مخفي افتراضيًا */
         }
         
         .admin-toggle:hover {
             transform: scale(1.1);
+        }
+        
+        .admin-toggle.visible {
+            display: flex;
         }
         
         header {
@@ -538,6 +543,11 @@
             justify-content: center;
             align-items: center;
             z-index: 10000;
+            display: none; /* مخفية افتراضيًا */
+        }
+        
+        .login-screen.show {
+            display: flex;
         }
         
         .login-box {
@@ -679,16 +689,11 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--secondary-color);
         }
-        
-        .admin-active .main-content {
-            filter: blur(3px);
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
     <!-- زر الإدارة - سيظهر فقط بعد تسجيل الدخول -->
-    <div class="admin-toggle" id="adminToggle" style="display: none;">
+    <div class="admin-toggle" id="adminToggle">
         <i class="fas fa-cog"></i>
     </div>
 
@@ -837,52 +842,43 @@
         </div>
     </div>
 
-    <!-- تسجيل الدخول -->
+    <!-- تسجيل الدخول للمدير فقط -->
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
             <div class="login-header">
-                <h2>مرحبًا بكم في متجر Eva</h2>
-                <p>متجر العناية والمكياج العراقي</p>
+                <h2><i class="fas fa-lock"></i> دخول المدير</h2>
+                <p>لوحة تحكم متجر Eva</p>
             </div>
             
             <div class="login-body">
-                <div class="login-message">
-                    <i class="fas fa-star"></i>
-                    <strong>مرحبًا بكم في متجر Eva</strong><br>
-                    للمتابعة كزائر، اضغطي على زر التخطي للذهاب إلى المتجر مباشرة.
-                </div>
-                
-                <!-- زر التخطي للزبائن -->
-                <button class="btn btn-primary btn-block" id="skipLogin" style="margin-bottom: 1rem;">
-                    <i class="fas fa-store"></i> تخطي والدخول إلى المتجر
-                </button>
-                
-                <div style="text-align: center; margin: 1.5rem 0; color: #666; font-size: 0.9rem;">
-                    أو
-                </div>
-                
-                <!-- نموذج تسجيل الدخول للمدير فقط -->
                 <div class="login-message" style="background-color: #e8f4fd; color: #0c5460; border-color: #b8daff;">
                     <i class="fas fa-user-shield"></i>
                     <strong>منطقة إدارية محمية</strong><br>
-                    هذه المنطقة مخصصة لإدارة المتجر فقط.
+                    هذه المنطقة مخصصة لإدارة المتجر فقط (للمدير فقط).
                 </div>
                 
                 <form id="loginForm">
                     <div class="form-group">
-                        <label>البريد الإلكتروني</label>
-                        <input type="email" class="form-control" id="loginEmail" required>
+                        <label><i class="fas fa-envelope"></i> البريد الإلكتروني</label>
+                        <input type="email" class="form-control" id="loginEmail" required placeholder="أدخل البريد الإلكتروني">
                     </div>
                     
                     <div class="form-group">
-                        <label>كلمة المرور</label>
-                        <input type="password" class="form-control" id="loginPassword" required>
+                        <label><i class="fas fa-key"></i> كلمة المرور</label>
+                        <input type="password" class="form-control" id="loginPassword" required placeholder="أدخل كلمة المرور">
                     </div>
                     
                     <button type="submit" class="btn btn-secondary btn-block">
-                        <i class="fas fa-sign-in-alt"></i> تسجيل الدخول (للمدير فقط)
+                        <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
                     </button>
                 </form>
+                
+                <div class="login-credentials">
+                    <p><i class="fas fa-info-circle"></i> للدخول كمدير، استخدم بيانات الدخول الخاصة بالإدارة</p>
+                    <p style="margin-top: 10px; font-size: 0.8rem; color: #888;">
+                        للعودة إلى المتجر، أغلق هذه النافذة
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -930,7 +926,7 @@
             }
         ];
         
-        let isLoggedIn = localStorage.getItem('eva_admin_logged') === 'true';
+        let isAdminLoggedIn = localStorage.getItem('eva_admin_logged') === 'true';
         
         // ==================== دوال مساعدة ====================
         function showNotification(message, type = "success") {
@@ -939,8 +935,11 @@
             
             notificationText.textContent = message;
             notification.className = `notification ${type}`;
+            
+            // إظهار الإشعار
             notification.style.display = 'flex';
             
+            // إخفاء الإشعار بعد 4 ثواني
             setTimeout(() => {
                 notification.style.display = 'none';
             }, 4000);
@@ -963,13 +962,6 @@
             
             document.getElementById('lastUpdate').textContent = dateStr;
             localStorage.setItem('eva_last_update', dateStr);
-        }
-        
-        // ==================== تخطي تسجيل الدخول للزبائن ====================
-        function skipLogin() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.body.classList.remove('admin-active');
-            showNotification("مرحبًا بكم في متجر Eva", "info");
         }
         
         // ==================== عرض المنتجات ====================
@@ -1010,10 +1002,6 @@
             
             // رسالة تأكيد للمستخدم
             showNotification(`جاري فتح إنستجرام لطلب ${productName}...`, "info");
-            
-            // يمكنك إضافة رسالة تلقائية إذا أردت
-            // const message = `أريد طلب ${productName} من متجر Eva`;
-            // window.open(`https://www.instagram.com/direct/new/?text=${encodeURIComponent(message)}`, '_blank');
         }
         
         // ==================== إدارة المنتجات ====================
@@ -1052,4 +1040,219 @@
         }
         
         function addProduct(productData) {
-            const newId = products.length > 0 ? Math.max
+            const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+            
+            const newProduct = {
+                id: newId,
+                name: productData.name,
+                description: productData.description,
+                price: productData.price,
+                originalPrice: productData.originalPrice || "",
+                image: productData.image,
+                category: productData.category
+            };
+            
+            products.push(newProduct);
+            saveProductsToStorage();
+            displayProducts();
+            displayAdminProducts();
+            
+            showNotification(`تمت إضافة المنتج "${productData.name}" بنجاح`);
+        }
+        
+        function editProduct(productId) {
+            if (!isAdminLoggedIn) {
+                showNotification("يجب تسجيل الدخول أولاً لتعديل المنتجات", "error");
+                return;
+            }
+            
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productDescription').value = product.description;
+            document.getElementById('productPrice').value = product.price;
+            document.getElementById('productOriginalPrice').value = product.originalPrice || "";
+            document.getElementById('productImage').value = product.image;
+            document.getElementById('productCategory').value = product.category;
+            
+            const submitBtn = document.querySelector('#addProductForm button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-sync-alt"></i> تحديث المنتج';
+            
+            const form = document.getElementById('addProductForm');
+            form.onsubmit = function(e) {
+                e.preventDefault();
+                
+                product.name = document.getElementById('productName').value;
+                product.description = document.getElementById('productDescription').value;
+                product.price = document.getElementById('productPrice').value;
+                product.originalPrice = document.getElementById('productOriginalPrice').value;
+                product.image = document.getElementById('productImage').value;
+                product.category = document.getElementById('productCategory').value;
+                
+                saveProductsToStorage();
+                displayProducts();
+                displayAdminProducts();
+                
+                form.reset();
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> حفظ المنتج';
+                form.onsubmit = handleAddProduct;
+                
+                showNotification(`تم تحديث المنتج "${product.name}" بنجاح`);
+            };
+        }
+        
+        function deleteProduct(productId) {
+            if (!isAdminLoggedIn) {
+                showNotification("يجب تسجيل الدخول أولاً لحذف المنتجات", "error");
+                return;
+            }
+            
+            if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+            
+            const productIndex = products.findIndex(p => p.id === productId);
+            if (productIndex === -1) return;
+            
+            const productName = products[productIndex].name;
+            products.splice(productIndex, 1);
+            
+            saveProductsToStorage();
+            displayProducts();
+            displayAdminProducts();
+            
+            showNotification(`تم حذف المنتج "${productName}" بنجاح`, "success");
+        }
+        
+        function handleAddProduct(e) {
+            e.preventDefault();
+            
+            if (!isAdminLoggedIn) {
+                showNotification("يجب تسجيل الدخول أولاً لإضافة منتجات", "error");
+                return;
+            }
+            
+            const productData = {
+                name: document.getElementById('productName').value,
+                description: document.getElementById('productDescription').value,
+                price: document.getElementById('productPrice').value,
+                originalPrice: document.getElementById('productOriginalPrice').value,
+                image: document.getElementById('productImage').value,
+                category: document.getElementById('productCategory').value
+            };
+            
+            addProduct(productData);
+            e.target.reset();
+        }
+        
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                localStorage.setItem('eva_admin_logged', 'true');
+                
+                // إخفاء شاشة تسجيل الدخول
+                document.getElementById('loginScreen').classList.remove('show');
+                
+                // إظهار زر الإدارة
+                document.getElementById('adminToggle').classList.add('visible');
+                
+                showNotification(`تم تسجيل الدخول بنجاح كمدير`, "success");
+            } else {
+                showNotification("بيانات الدخول غير صحيحة", "error");
+            }
+        }
+        
+        function logoutAdmin() {
+            if (!isAdminLoggedIn) return;
+            
+            isAdminLoggedIn = false;
+            localStorage.removeItem('eva_admin_logged');
+            
+            // إغلاق لوحة التحكم
+            document.getElementById('adminPanel').classList.remove('active');
+            
+            // إخفاء زر الإدارة
+            document.getElementById('adminToggle').classList.remove('visible');
+            
+            showNotification("تم تسجيل الخروج بنجاح", "success");
+        }
+        
+        function openAdminPanel() {
+            if (!isAdminLoggedIn) {
+                // إذا لم يكن مسجلاً دخول، فإظهار شاشة تسجيل الدخول
+                document.getElementById('loginScreen').classList.add('show');
+                return;
+            }
+            
+            // إذا كان مسجلاً دخول، ففتح لوحة التحكم
+            document.getElementById('adminPanel').classList.add('active');
+        }
+        
+        // ==================== تهيئة الموقع ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحديث سنة حقوق النشر
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            
+            // تحديث وقت آخر تحديث
+            const lastUpdate = localStorage.getItem('eva_last_update');
+            if (lastUpdate) {
+                document.getElementById('lastUpdate').textContent = lastUpdate;
+            } else {
+                updateLastUpdateTime();
+            }
+            
+            // عرض المنتجات
+            displayProducts();
+            displayAdminProducts();
+            
+            // التحقق من حالة تسجيل الدخول
+            if (isAdminLoggedIn) {
+                document.getElementById('adminToggle').classList.add('visible');
+            }
+            
+            // ربط أحداث النماذج
+            document.getElementById('addProductForm').onsubmit = handleAddProduct;
+            document.getElementById('loginForm').onsubmit = handleLogin;
+            
+            // إدارة لوحة التحكم
+            document.getElementById('adminToggle').onclick = openAdminPanel;
+            
+            document.getElementById('closeAdmin').onclick = function() {
+                document.getElementById('adminPanel').classList.remove('active');
+            };
+            
+            // تسجيل الخروج
+            document.getElementById('logoutAdmin').onclick = logoutAdmin;
+            
+            // إغلاق شاشة تسجيل الدخول عند النقر خارجها
+            document.getElementById('loginScreen').onclick = function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            };
+            
+            // إضافة تأثير ظهور المنتجات عند التمرير
+            const productCards = document.querySelectorAll('.product-card');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            productCards.forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>
